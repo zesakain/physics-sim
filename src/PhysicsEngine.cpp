@@ -4,7 +4,7 @@ PhysicsEngine::PhysicsEngine(double initial_pos, double initial_vel, double grav
     : m_position(initial_pos), m_velocity(initial_vel), m_acceleration(gravity), m_time(0.0) {}
 
 void PhysicsEngine::step(double dt) {
-    // Semi-implicit Euler integration (more stable than standard Euler)
+    // Semi-implicit Euler integration
     m_velocity += m_acceleration * dt;
     m_position += m_velocity * dt;
     m_time += dt;
