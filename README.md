@@ -11,4 +11,4 @@ Simple physics simulations using numerical methods.
 mkdir build && cd build
 cmake ..
 make
-./sim
+./PhysicsSim
