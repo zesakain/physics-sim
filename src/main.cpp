@@ -1,24 +1,27 @@
 #include <iostream>
-using namespace std;
+#include <iomanip>
+#include "PhysicsEngine.hpp"
 
 int main() {
-    double position = 100.0; // meter
-    double velocity = 0.0;
-    double acceleration = -9.81; // gravitasi
-    double dt = 0.01; // time step
-    double time = 0.0;
+    // Configuration
+    const double dt = 0.01;
+    PhysicsEngine engine(100.0, 0.0);
 
-    while (position > 0) {
-        velocity += acceleration * dt;
-        position += velocity * dt;
+    std::cout << std::fixed << std::setprecision(3);
+    std::cout << "Starting Simulation..." << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
 
-        time += dt;
+    while (engine.isFalling()) {
+        engine.step(dt);
+        SimulationState state = engine.getState();
 
-        cout << "t: " << time 
-             << " | y: " << position 
-             << " | v: " << velocity << endl;
+        std::cout << "t: " << state.time 
+                  << " s | y: " << state.position 
+                  << " m | v: " << state.velocity << " m/s" << std::endl;
     }
 
-    cout << "Touch t = " << time << " Second" << endl;
+    std::cout << "---------------------------------------------" << std::endl;
+    std::cout << "Impact reached at t = " << engine.getState().time << " seconds" << std::endl;
+
     return 0;
 }
