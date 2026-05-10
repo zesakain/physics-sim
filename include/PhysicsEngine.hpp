@@ -1,5 +1,25 @@
 #ifndef PHYSICS_ENGINE_HPP
 #define PHYSICS_ENGINE_HPP
+#include <glm/glm.hpp> // High-performance math library
+
+struct Particle {
+    glm::vec2 position;
+    glm::vec2 velocity;
+    float mass;
+    float radius;
+    bool isStatic; // For ground or walls
+};
+
+class PhysicsWorld {
+public:
+    void addParticle(Particle p);
+    void update(float dt);
+    const std::vector<Particle>& getParticles() const;
+
+private:
+    std::vector<Particle> m_particles;
+    glm::vec2 m_gravity = {0.0f, -9.81f};
+};
 
 /**
  * @brief Structure to hold the physical state of an object at any given time.
