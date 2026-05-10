@@ -1,27 +1,66 @@
+#include <GLFW/glfw3.h>
 #include <iostream>
-#include <iomanip>
 #include "PhysicsEngine.hpp"
 
+// Window dimensions
+const int WIDTH = 800;
+const int HEIGHT = 600;
+
 int main() {
-    // Configuration
-    const double dt = 0.01;
-    PhysicsEngine engine(100.0, 0.0);
-
-    std::cout << std::fixed << std::setprecision(3);
-    std::cout << "Starting Simulation..." << std::endl;
-    std::cout << "---------------------------------------------" << std::endl;
-
-    while (engine.isFalling()) {
-        engine.step(dt);
-        SimulationState state = engine.getState();
-
-        std::cout << "t: " << state.time 
-                  << " s | y: " << state.position 
-                  << " m | v: " << state.velocity << " m/s" << std::endl;
+    // 1. Initialize GLFW
+    if (!glfwInit()) {
+        std::cerr << "Failed to initialize GLFW" << std::endl;
+        return -1;
     }
 
-    std::cout << "---------------------------------------------" << std::endl;
-    std::cout << "Impact reached at t = " << engine.getState().time << " seconds" << std::endl;
+    // 2. Create Window
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Physics Simulation - Falling Cube", NULL, NULL);
+    if (!window) {
+        glfwTerminate();
+        return -1;
+    }
+    glfwMakeContextCurrent(window);
 
+    // 3. Initialize Physics Engine (Start at height 1.0, which is top of screen in normalized coords)
+    PhysicsEngine engine(1.0, 0.0, -0.5); // Using smaller gravity for visual clarity
+    double lastTime = glfwGetTime();
+
+    // 4. Main Loop
+    while (!glfwWindowShouldClose(window)) {
+        // Calculate delta time
+        double currentTime = glfwGetTime();
+        double deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+
+        // --- Physics Step ---
+        if (engine.isFalling()) {
+            engine.step(deltaTime);
+        }
+
+        // --- Rendering ---
+        glClear(GL_COLOR_BUFFER_BIT);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f); // Dark background
+
+        SimulationState state = engine.getState();
+
+        // Draw a simple square representing the object
+        glPushMatrix();
+        glTranslated(0.0, state.position, 0.0); // Move object to current Y position
+
+        glBegin(GL_QUADS);
+            glColor3f(0.0f, 0.8f, 1.0f); // Cyan color
+            glVertex2f(-0.05f, -0.05f);
+            glVertex2f( 0.05f, -0.05f);
+            glVertex2f( 0.05f,  0.05f);
+            glVertex2f(-0.05f,  0.05f);
+        glEnd();
+        glPopMatrix();
+
+        // Swap buffers and poll events
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    glfwTerminate();
     return 0;
 }
