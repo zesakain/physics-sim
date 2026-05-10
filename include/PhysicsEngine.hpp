@@ -1,33 +1,56 @@
 #ifndef PHYSICS_ENGINE_HPP
 #define PHYSICS_ENGINE_HPP
 
-#include <vector>
-
+/**
+ * @brief Structure to hold the physical state of an object at any given time.
+ */
 struct SimulationState {
     double time;
     double position;
     double velocity;
 };
 
+/**
+ * @brief A simple 1D Physics Engine using Semi-Implicit Euler Integration.
+ */
 class PhysicsEngine {
 public:
-    // Constructor to initialize physical constants
-    PhysicsEngine(double initial_pos, double initial_vel, double gravity = -9.81);
+    /**
+     * @param initial_pos Starting height.
+     * @param initial_vel Starting velocity (positive is up).
+     * @param gravity Acceleration constant (default Earth gravity).
+     * @param bounciness Energy retained after hitting the ground (0.0 to 1.0).
+     */
+    PhysicsEngine(double initial_pos, double initial_vel, double gravity = -9.81, double bounciness = 0.7);
 
-    // Updates the state of the object based on time step dt
+    /**
+     * @brief Updates the physics state based on elapsed time.
+     * @param dt Delta time (time elapsed since last frame).
+     */
     void step(double dt);
 
-    // Check if the object has hit the ground
+    /**
+     * @brief Returns true if the object is above the ground or still has significant velocity.
+     */
     bool isFalling() const;
 
-    // Getters for the current state
+    /**
+     * @brief Returns the current state (time, y-pos, velocity).
+     */
     SimulationState getState() const;
+
+    /**
+     * @brief Resets the object to a specific height (useful for interactive apps).
+     */
+    void reset(double position);
 
 private:
     double m_position;
     double m_velocity;
     double m_acceleration;
     double m_time;
+    double m_bounciness;
+    const double m_groundLevel = -0.9; // Matches the bottom of the OpenGL NDC
 };
 
 #endif
