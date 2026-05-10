@@ -18,11 +18,7 @@ sudo pacman -Syu --needed cmake gcc base-devel glfw-x11 mesa glu
 ```
 ## Clone
 ```bash
-<<<<<<< HEAD
-https://github.com/zesakain/physics-sim.git
-=======
 git clone https://github.com/zesakain/physics-sim.git
->>>>>>> 6400a91 (docs: fix git clone instruction)
 ```
 
 ## Build & Run
