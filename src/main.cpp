@@ -6,14 +6,31 @@
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
+/**
+ * 1. Callback function must be defined OUTSIDE of main.
+ * This is triggered by GLFW events.
+ */
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    // Get the physics engine instance from the window's user pointer
+    PhysicsEngine* engine = static_cast<PhysicsEngine*>(glfwGetWindowUserPointer(window));
+
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+        std::cout << "Space pressed: Applying Jump/Reset!" << std::endl;
+        if (engine) {
+            // Logic: Reset to top of screen with upward velocity
+            engine->reset(1.0);
+        }
+    }
+}
+
 int main() {
-    // 1. Initialize GLFW
+    // 2. Initialize GLFW
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return -1;
     }
 
-    // 2. Create Window
+    // 3. Create Window
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Physics Simulation - Falling Cube", NULL, NULL);
     if (!window) {
         glfwTerminate();
@@ -21,11 +38,20 @@ int main() {
     }
     glfwMakeContextCurrent(window);
 
-    // 3. Initialize Physics Engine (Start at height 1.0, which is top of screen in normalized coords)
-    PhysicsEngine engine(1.0, 0.0, -0.5); // Using smaller gravity for visual clarity
+    // 4. Setup Physics Engine
+    PhysicsEngine engine(1.0, 0.0, -0.8); // Slightly stronger gravity
+
+    /**
+     * 5. State Management Bridge:
+     * We attach our 'engine' instance to the GLFW window.
+     * This allows the callback (which is global) to access local main data.
+     */
+    glfwSetWindowUserPointer(window, &engine);
+    glfwSetKeyCallback(window, key_callback);
+
     double lastTime = glfwGetTime();
 
-    // 4. Main Loop
+    // 6. Main Loop
     while (!glfwWindowShouldClose(window)) {
         // Calculate delta time
         double currentTime = glfwGetTime();
@@ -39,24 +65,30 @@ int main() {
 
         // --- Rendering ---
         glClear(GL_COLOR_BUFFER_BIT);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f); // Dark background
+        glClearColor(0.1f, 0.11f, 0.12f, 1.0f); // Professional dark theme
 
         SimulationState state = engine.getState();
 
-        // Draw a simple square representing the object
+        // Draw the object
         glPushMatrix();
-        glTranslated(0.0, state.position, 0.0); // Move object to current Y position
+        glTranslated(0.0, state.position, 0.0);
 
         glBegin(GL_QUADS);
-            glColor3f(0.0f, 0.8f, 1.0f); // Cyan color
-            glVertex2f(-0.05f, -0.05f);
-            glVertex2f( 0.05f, -0.05f);
-            glVertex2f( 0.05f,  0.05f);
-            glVertex2f(-0.05f,  0.05f);
+            glColor3f(0.0f, 0.7f, 1.0f); // Material Blue
+            glVertex2f(-0.06f, -0.06f);
+            glVertex2f( 0.06f, -0.06f);
+            glVertex2f( 0.06f,  0.06f);
+            glVertex2f(-0.06f,  0.06f);
         glEnd();
         glPopMatrix();
 
-        // Swap buffers and poll events
+        // Draw ground line
+        glBegin(GL_LINES);
+            glColor3f(1.0f, 1.0f, 1.0f);
+            glVertex2f(-1.0f, -0.91f);
+            glVertex2f( 1.0f, -0.91f);
+        glEnd();
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
