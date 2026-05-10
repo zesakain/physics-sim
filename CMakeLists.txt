@@ -19,6 +19,7 @@ include_directories(include)
 set(SOURCES
     src/main.cpp
     src/PhysicsEngine.cpp
+    src/InputManager.cpp
 )
 
 # Create the executable
