@@ -1,93 +1,138 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <vector>
 #include "PhysicsEngine.hpp"
+#include "InputManager.hpp"
 
 // Window dimensions
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
-/**
- * 1. Callback function must be defined OUTSIDE of main.
- * This is triggered by GLFW events.
- */
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    // Get the physics engine instance from the window's user pointer
-    PhysicsEngine* engine = static_cast<PhysicsEngine*>(glfwGetWindowUserPointer(window));
-
-    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-        std::cout << "Space pressed: Applying Jump/Reset!" << std::endl;
-        if (engine) {
-            // Logic: Reset to top of screen with upward velocity
-            engine->reset(1.0);
-        }
-    }
-}
+// Upgraded entity structure
+struct Cube {
+    PhysicsEngine physics;
+    float x_pos;
+    bool isSelected; // Tracks if the user is controlling this cube
+};
 
 int main() {
-    // 2. Initialize GLFW
+    // 1. Initialize GLFW
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return -1;
     }
 
-    // 3. Create Window
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Physics Simulation - Falling Cube", NULL, NULL);
+    // 2. Create Window
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Physics Simulation - Interactive Cubes", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return -1;
     }
     glfwMakeContextCurrent(window);
 
-    // 4. Setup Physics Engine
-    PhysicsEngine engine(1.0, 0.0, -0.8); // Slightly stronger gravity
+    // Initialize our custom InputManager BEFORE the main loop
+    InputManager::init(window);
 
-    /**
-     * 5. State Management Bridge:
-     * We attach our 'engine' instance to the GLFW window.
-     * This allows the callback (which is global) to access local main data.
-     */
-    glfwSetWindowUserPointer(window, &engine);
-    glfwSetKeyCallback(window, key_callback);
+    // 3. Initialize Multiple Cubes
+    std::vector<Cube> cubes;
+    const int NUM_CUBES = 10;
+
+    for (int i = 0; i < NUM_CUBES; ++i) {
+        float x_offset = -0.8f + (i * (1.6f / (NUM_CUBES - 1)));
+        double start_y = 1.0 - (i * 0.05);
+
+        cubes.push_back({
+            PhysicsEngine(start_y, 0.0, -0.5),
+            x_offset,
+            false // All cubes start unselected
+        });
+    }
 
     double lastTime = glfwGetTime();
+    bool mouseWasPressed = false;
 
-    // 6. Main Loop
+    // 4. Main Loop (Only ONE loop)
     while (!glfwWindowShouldClose(window)) {
-        // Calculate delta time
+        // Calculate frame delta time
         double currentTime = glfwGetTime();
         double deltaTime = currentTime - lastTime;
         lastTime = currentTime;
 
-        // --- Physics Step ---
-        if (engine.isFalling()) {
-            engine.step(deltaTime);
+        // --- Mouse Click Detection (Raycasting) ---
+                if (InputManager::isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT)) {
+                    double ndc_x, ndc_y;
+                    InputManager::getMouseNDC(window, ndc_x, ndc_y);
+
+                    for (auto& cube : cubes) {
+                        float cube_y = static_cast<float>(cube.physics.getState().position);
+
+                        if (ndc_x >= cube.x_pos - 0.04f && ndc_x <= cube.x_pos + 0.04f &&
+                            ndc_y >= cube_y - 0.04f && ndc_y <= cube_y + 0.04f) {
+
+                            for (auto& c : cubes) c.isSelected = false; // Deselect others
+                            cube.isSelected = true; // Select this one
+                            std::cout << "Cube selected at X: " << cube.x_pos << std::endl;
+                            break;
+                        }
+                    }
+                }
+
+        // --- Update Logic ---
+        for (auto& cube : cubes) {
+            if (cube.isSelected) {
+                // Kinematic State: Controlled by WASD
+                float speed = 2.0f * static_cast<float>(deltaTime);
+
+                // Get the current Y from the physics engine
+                float current_y = static_cast<float>(cube.physics.getState().position);
+
+                // Using our new clean API
+                if (InputManager::isKeyDown(GLFW_KEY_W)) current_y += speed;
+                if (InputManager::isKeyDown(GLFW_KEY_S)) current_y -= speed;
+                if (InputManager::isKeyDown(GLFW_KEY_A)) cube.x_pos -= speed;
+                if (InputManager::isKeyDown(GLFW_KEY_D)) cube.x_pos += speed;
+
+                // Boundary constraints
+                if (cube.x_pos < -0.95f) cube.x_pos = -0.95f;
+                if (cube.x_pos >  0.95f) cube.x_pos =  0.95f;
+                if (current_y < -0.95f) current_y = -0.95f;
+                if (current_y >  0.95f) current_y =  0.95f;
+
+                // Force the physics engine to update to the manual position
+                cube.physics.reset(current_y);
+            } else {
+                // Dynamic State: Let the PhysicsEngine handle falling
+                cube.physics.step(deltaTime);
+            }
         }
 
         // --- Rendering ---
         glClear(GL_COLOR_BUFFER_BIT);
-        glClearColor(0.1f, 0.11f, 0.12f, 1.0f); // Professional dark theme
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
-        SimulationState state = engine.getState();
+        for (const auto& cube : cubes) {
+            SimulationState state = cube.physics.getState();
 
-        // Draw the object
-        glPushMatrix();
-        glTranslated(0.0, state.position, 0.0);
+            glPushMatrix();
+            glTranslated(cube.x_pos, state.position, 0.0);
 
-        glBegin(GL_QUADS);
-            glColor3f(0.0f, 0.7f, 1.0f); // Material Blue
-            glVertex2f(-0.06f, -0.06f);
-            glVertex2f( 0.06f, -0.06f);
-            glVertex2f( 0.06f,  0.06f);
-            glVertex2f(-0.06f,  0.06f);
-        glEnd();
-        glPopMatrix();
+            glBegin(GL_QUADS);
+                if (cube.isSelected) {
+                    glColor3f(0.2f, 1.0f, 0.2f); // Green
+                } else if (cube.x_pos < 0) {
+                    glColor3f(0.0f, 0.8f, 1.0f); // Cyan
+                } else {
+                    glColor3f(1.0f, 0.5f, 0.2f); // Orange
+                }
 
-        // Draw ground line
-        glBegin(GL_LINES);
-            glColor3f(1.0f, 1.0f, 1.0f);
-            glVertex2f(-1.0f, -0.91f);
-            glVertex2f( 1.0f, -0.91f);
-        glEnd();
+                glVertex2f(-0.04f, -0.04f);
+                glVertex2f( 0.04f, -0.04f);
+                glVertex2f( 0.04f,  0.04f);
+                glVertex2f(-0.04f,  0.04f);
+            glEnd();
+
+            glPopMatrix();
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
