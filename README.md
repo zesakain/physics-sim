@@ -13,12 +13,18 @@ Mouse raycasting for object selection.
 Kinematic state control (WASD) via custom InputManager.
 
 ## Dependencies
-'''bash
-sudo pacman -Syu cmake gcc base-devel glfw-x11 mesa glu
-
-## Build
 ```bash
-mkdir build && cd build
+sudo pacman -Syu --needed cmake gcc base-devel glfw-x11 mesa glu
+```
+## Clone
+```bash
+https://github.com/zesakain/physics-sim.git
+```
+
+## Build & Run
+```bash
+mkdir -p build && cd build
 cmake ..
 make
 ./PhysicsSim
+```
