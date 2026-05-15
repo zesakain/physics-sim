@@ -14,7 +14,7 @@ Kinematic state control (WASD) via custom InputManager.
 
 ## Dependencies
 ```bash
-sudo pacman -Syu --needed cmake gcc base-devel glfw-x11 mesa glu
+sudo pacman -Syu --needed cmake gcc base-devel glfw-x11 mesa glu glm
 ```
 ## Clone
 ```bash
